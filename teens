@@ -1,0 +1,64 @@
+url = 'https://raw.githubusercontent.com/JayRay1987/MLwR/master/Machine%20Learning%20with%20R%20(3rd%20Ed.)/Chapter09/snsdata.csv'
+teens <- read.csv(url)
+#structure of the data frame
+str(teens)
+#female to male split
+table(teens$gender)
+#check how many missing values
+table(teens$gender, useNA = "ifany")
+#2724 missing values for gender
+#check age
+summary(teens$age)
+#506 missing values
+#recode age variable
+#change outliers, less than 13 and greater than 20, to NA.
+teens$age <- ifelse(teens$age >= 13 & teens$age < 20, teens$age, NA)
+summary(teens$age)
+#create dummy coding for female and no gender
+teens$female <- ifelse(teens$gender == "F" & !is.na(teens$gender), 1, 0)
+teens$no_gender <- ifelse(is.na(teens$gender), 1, 0)
+#mean of the age of the teens
+mean(teens$age)
+#too many NAs
+#check mean by removing the NAs from the formula
+mean(teens$age, na.rm = TRUE)
+#check the mean age for each year
+aggregate(data = teens, age ~ gradyear, mean, na.rm = TRUE)
+#create a vector of the mean age for each year with the length of the original vector
+ave_age <- ave(teens$age, teens$gradyear, FUN = function(x) mean(x, na.rm = TRUE))
+#change the NAs to values in the ave_age vector
+teens$age <- ifelse(is.na(teens$age), ave_age, teens$age)
+#summary of the age
+summary(teens$age)
+#training the model
+#create a data frame of 36 features
+interests <- teens[5:40]
+#rescale the features using z-score
+interests_z <- as.data.frame(lapply(interests, scale))
+#seed
+set.seed(2345)
+teen_clusters <- kmeans(interests_z, 5)
+#size of the clusters
+teen_clusters$size
+#largest cluster is 21514
+#smallest cluster is 600
+teen_clusters$centers
+#install packages
+install.packages("cluster")
+install.packages("fpc")
+#load packages
+library(cluster)
+library(fpc)
+#plot the cluster
+plotcluster(interests_z, teen_clusters$cluster)
+#improve model performance
+#add the clusters to the original data set
+teens$cluster <- teen_clusters$cluster
+#first five teens in data
+teens[1:5, c("cluster", "gender", "age", "friends")]
+#use aggregate function to get demographic characteristics
+aggregate(data = teens, age ~ cluster, mean)
+#use aggregate function to get age characteristics
+aggregate(data = teens, female ~ cluster, mean)
+#use aggregate function to get friends characteristics
+aggregate(data = teens, friends ~ cluster, mean)
